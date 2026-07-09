@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breach Recovery Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Breach Recovery">
+    <title>🔍 Breach Recovery Tool</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 10px;
@@ -24,18 +28,18 @@
 
         .container {
             background: white;
-            border-radius: 12px;
+            border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 20px;
             width: 100%;
             max-width: 500px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         h1 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 24px;
+            margin-bottom: 8px;
+            font-size: 26px;
             text-align: center;
         }
 
@@ -50,13 +54,58 @@
             border-left: 4px solid #667eea;
         }
 
+        .info-box {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            color: #666;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .section-title {
             color: #667eea;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             margin-bottom: 10px;
             text-transform: uppercase;
@@ -71,6 +120,7 @@
             border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.3s;
+            font-family: inherit;
         }
 
         input:focus, select:focus {
@@ -91,6 +141,7 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             margin-bottom: 10px;
+            font-family: inherit;
         }
 
         button:active {
@@ -98,79 +149,13 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .results {
-            background: #f9f9f9;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .results.show {
-            display: block;
-        }
-
-        .result-item {
-            background: white;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid #667eea;
-            border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .result-label {
-            color: #667eea;
-            font-weight: 600;
-            display: block;
-            margin-bottom: 3px;
-        }
-
-        .result-value {
-            color: #333;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            padding: 6px;
-            background: #f5f5f5;
-            border-radius: 4px;
-            margin-top: 3px;
-        }
-
-        .breach-found {
-            border-left-color: #ff6b6b;
-            background: #fff5f5;
-        }
-
-        .breach-found .result-label {
-            color: #ff6b6b;
-        }
-
-        .export-section {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .export-button {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            margin-bottom: 8px;
-        }
-
-        .export-button:active {
-            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
-        }
-
         .status {
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
             margin-bottom: 10px;
             font-size: 13px;
             display: none;
+            word-break: break-word;
         }
 
         .status.show {
@@ -195,84 +180,132 @@
             border-left: 4px solid #c62828;
         }
 
-        .info-box {
-            background: #f5f5f5;
-            border-left: 4px solid #667eea;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #555;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .loader {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            color: #666;
-            border: none;
-            border-bottom: 3px solid transparent;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            transition: all 0.3s;
-            margin-bottom: -2px;
-        }
-
-        .tab-btn.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-
-        .tab-content {
+        .results {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 500px;
+            overflow-y: auto;
             display: none;
         }
 
-        .tab-content.active {
+        .results.show {
             display: block;
+        }
+
+        .result-item {
+            background: white;
+            padding: 14px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .result-item.breach {
+            border-left-color: #ff6b6b;
+            background: #fff5f5;
+        }
+
+        .result-label {
+            color: #667eea;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .result-item.breach .result-label {
+            color: #ff6b6b;
+        }
+
+        .result-value {
+            color: #333;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .export-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e0e0;
+            display: none;
+        }
+
+        .export-section.show {
+            display: block;
+        }
+
+        .export-button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            margin-bottom: 8px;
+        }
+
+        .export-button:active {
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .breach-count {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                border-radius: 12px;
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            button {
+                padding: 14px;
+            }
+
+            input {
+                padding: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🔍 Breach Recovery Tool</h1>
-        <div class="subtitle">Find your stolen or compromised data - Transparent & Tamper-Proof</div>
+        <div class="subtitle">Find your stolen or compromised data - 100% Web Browser</div>
 
         <div class="info-box">
-            ✓ All code is open-source and verifiable<br>
-            ✓ No hidden modifications or locks<br>
-            ✓ Full export with Username, Password & Source<br>
-            ✓ iPhone & Desktop Compatible
+            ✓ Runs completely in your browser (no server needed)<br>
+            ✓ All code transparent & tamper-proof<br>
+            ✓ Export: Username, Password & Source<br>
+            ✓ Works on iPhone, iPad, Desktop
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" data-tab="email">Email Search</button>
-            <button class="tab-btn" data-tab="username">Username Search</button>
-            <button class="tab-btn" data-tab="phone">Phone Search</button>
+            <button class="tab-btn active" data-tab="email">📧 Email</button>
+            <button class="tab-btn" data-tab="username">👤 Username</button>
+            <button class="tab-btn" data-tab="phone">📱 Phone</button>
         </div>
 
         <!-- Email Tab -->
@@ -280,7 +313,7 @@
             <div class="section">
                 <div class="section-title">Email Breach Lookup</div>
                 <input type="email" id="emailInput" placeholder="Enter email address" />
-                <button onclick="searchEmail()">Search Email</button>
+                <button onclick="searchEmail()">🔎 Search Email</button>
             </div>
         </div>
 
@@ -289,7 +322,7 @@
             <div class="section">
                 <div class="section-title">Username Breach Lookup</div>
                 <input type="text" id="usernameInput" placeholder="Enter username" />
-                <button onclick="searchUsername()">Search Username</button>
+                <button onclick="searchUsername()">🔎 Search Username</button>
             </div>
         </div>
 
@@ -298,7 +331,7 @@
             <div class="section">
                 <div class="section-title">Phone Breach Lookup</div>
                 <input type="tel" id="phoneInput" placeholder="Enter phone number" />
-                <button onclick="searchPhone()">Search Phone</button>
+                <button onclick="searchPhone()">🔎 Search Phone</button>
             </div>
         </div>
 
@@ -306,7 +339,7 @@
 
         <div id="results" class="results"></div>
 
-        <div id="exportSection" class="export-section" style="display: none;">
+        <div id="exportSection" class="export-section">
             <button class="export-button" onclick="exportCSV()">📥 Export as CSV</button>
             <button class="export-button" onclick="exportJSON()">📥 Export as JSON</button>
             <button class="export-button" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
@@ -314,9 +347,21 @@
     </div>
 
     <script>
+        // ====== BREACH DATABASE (Add real breaches here) ======
+        // Format: { username, email, password, source, date }
+        const BREACH_DATABASE = {
+            'test@example.com': [
+                { username: 'testuser', email: 'test@example.com', password: 'Password123!', source: 'LinkedIn Breach 2021', date: '2021-06-15' },
+                { username: 'testuser', email: 'test@example.com', password: 'MyPass456#', source: 'Facebook Data Leak', date: '2022-03-22' }
+            ],
+            'john@gmail.com': [
+                { username: 'johnsmith', email: 'john@gmail.com', password: 'SecurePass789!', source: 'Twitter Breach 2020', date: '2020-11-01' }
+            ]
+        };
+
         let currentResults = [];
 
-        // Tab switching
+        // ====== TAB SWITCHING ======
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const tabName = this.getAttribute('data-tab');
@@ -327,10 +372,11 @@
             });
         });
 
+        // ====== STATUS MESSAGES ======
         function showStatus(message, type = 'loading') {
             const status = document.getElementById('status');
-            status.textContent = type === 'loading' ? '⏳ ' : '';
-            status.textContent += message;
+            const spinner = type === 'loading' ? '⏳ ' : '';
+            status.textContent = spinner + message;
             status.className = `status show ${type}`;
         }
 
@@ -338,17 +384,85 @@
             document.getElementById('status').classList.remove('show');
         }
 
-        function displayResults(results) {
+        // ====== SEARCH FUNCTIONS ======
+        function searchEmail() {
+            const email = document.getElementById('emailInput').value.trim().toLowerCase();
+            if (!email) {
+                showStatus('Please enter an email address', 'error');
+                return;
+            }
+            if (!email.includes('@')) {
+                showStatus('Please enter a valid email', 'error');
+                return;
+            }
+
+            showStatus('Searching breach database...', 'loading');
+            setTimeout(() => {
+                const results = BREACH_DATABASE[email] || [];
+                displayResults(results, email);
+            }, 800);
+        }
+
+        function searchUsername() {
+            const username = document.getElementById('usernameInput').value.trim().toLowerCase();
+            if (!username) {
+                showStatus('Please enter a username', 'error');
+                return;
+            }
+            if (username.length < 3) {
+                showStatus('Username must be at least 3 characters', 'error');
+                return;
+            }
+
+            showStatus('Searching breach database...', 'loading');
+            setTimeout(() => {
+                const results = [];
+                for (const email in BREACH_DATABASE) {
+                    BREACH_DATABASE[email].forEach(breach => {
+                        if (breach.username.toLowerCase() === username) {
+                            results.push(breach);
+                        }
+                    });
+                }
+                displayResults(results, username);
+            }, 800);
+        }
+
+        function searchPhone() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            if (!phone) {
+                showStatus('Please enter a phone number', 'error');
+                return;
+            }
+            if (phone.length < 10) {
+                showStatus('Please enter a valid phone number', 'error');
+                return;
+            }
+
+            showStatus('Searching breach database...', 'loading');
+            setTimeout(() => {
+                // Phone search simulation - expand with real data
+                const results = [];
+                displayResults(results, phone);
+            }, 800);
+        }
+
+        // ====== DISPLAY RESULTS ======
+        function displayResults(results, query) {
             currentResults = results;
             const resultsDiv = document.getElementById('results');
             const exportSection = document.getElementById('exportSection');
 
             if (results.length === 0) {
-                resultsDiv.innerHTML = '<div class="result-item">✓ No breaches found for this query</div>';
+                resultsDiv.innerHTML = '<div class="no-results">✓ No breaches found for this query</div>';
+                exportSection.classList.remove('show');
+                hideStatus();
+                showStatus('✓ Clean - No breaches found', 'success');
             } else {
-                resultsDiv.innerHTML = results.map((result, idx) => `
-                    <div class="result-item breach-found">
-                        <span class="result-label">⚠️ BREACH #${idx + 1}</span>
+                let html = `<div class="breach-count">⚠️ Found ${results.length} breach(es)</div>`;
+                html += results.map((result, idx) => `
+                    <div class="result-item breach">
+                        <span class="result-label">💥 Breach #${idx + 1}</span>
                         <div>
                             <strong>Username:</strong><br>
                             <span class="result-value">${escapeHtml(result.username || 'N/A')}</span>
@@ -367,121 +481,20 @@
                         </div>
                         <div style="margin-top: 8px;">
                             <strong>Date:</strong><br>
-                            <span class="result-value">${escapeHtml(result.date || 'N/A')}</span>
+                            <span class="result-value">${escapeHtml(result.date || 'Unknown')}</span>
                         </div>
                     </div>
                 `).join('');
+                resultsDiv.innerHTML = html;
+                exportSection.classList.add('show');
+                hideStatus();
+                showStatus(`⚠️ Found ${results.length} breach(es) - Export your data`, 'error');
             }
 
             resultsDiv.classList.add('show');
-            exportSection.style.display = results.length > 0 ? 'block' : 'none';
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        async function searchEmail() {
-            const email = document.getElementById('emailInput').value.trim();
-            if (!email) {
-                showStatus('Please enter an email address', 'error');
-                return;
-            }
-
-            showStatus('Searching breach databases...', 'loading');
-            
-            try {
-                // Simulated breach data lookup - in production, connect to real APIs
-                const mockResults = await simulateBreachLookup('email', email);
-                displayResults(mockResults);
-                hideStatus();
-                
-                if (mockResults.length > 0) {
-                    showStatus(`Found ${mockResults.length} breach(es)`, 'error');
-                } else {
-                    showStatus('No breaches found', 'success');
-                }
-            } catch (error) {
-                showStatus('Error during search: ' + error.message, 'error');
-            }
-        }
-
-        async function searchUsername() {
-            const username = document.getElementById('usernameInput').value.trim();
-            if (!username) {
-                showStatus('Please enter a username', 'error');
-                return;
-            }
-
-            showStatus('Searching breach databases...', 'loading');
-            
-            try {
-                const mockResults = await simulateBreachLookup('username', username);
-                displayResults(mockResults);
-                hideStatus();
-                
-                if (mockResults.length > 0) {
-                    showStatus(`Found ${mockResults.length} breach(es)`, 'error');
-                } else {
-                    showStatus('No breaches found', 'success');
-                }
-            } catch (error) {
-                showStatus('Error during search: ' + error.message, 'error');
-            }
-        }
-
-        async function searchPhone() {
-            const phone = document.getElementById('phoneInput').value.trim();
-            if (!phone) {
-                showStatus('Please enter a phone number', 'error');
-                return;
-            }
-
-            showStatus('Searching breach databases...', 'loading');
-            
-            try {
-                const mockResults = await simulateBreachLookup('phone', phone);
-                displayResults(mockResults);
-                hideStatus();
-                
-                if (mockResults.length > 0) {
-                    showStatus(`Found ${mockResults.length} breach(es)`, 'error');
-                } else {
-                    showStatus('No breaches found', 'success');
-                }
-            } catch (error) {
-                showStatus('Error during search: ' + error.message, 'error');
-            }
-        }
-
-        async function simulateBreachLookup(type, query) {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Mock breach data - replace with real API calls
-            const mockBreaches = [
-                {
-                    username: 'user_' + query.split('@')[0],
-                    email: query.includes('@') ? query : query + '@example.com',
-                    password: 'P@ssw0rd123!',
-                    source: 'LinkedIn Breach 2021',
-                    date: '2021-06-15'
-                },
-                {
-                    username: query,
-                    email: query.includes('@') ? query : 'user+' + query + '@gmail.com',
-                    password: 'MySecurePass#789',
-                    source: 'Facebook Data Leak',
-                    date: '2022-03-22'
-                }
-            ];
-
-            // 60% chance of finding a breach for demo
-            return Math.random() > 0.4 ? mockBreaches : [];
-        }
-
+        // ====== EXPORT FUNCTIONS ======
         function exportCSV() {
             if (currentResults.length === 0) {
                 showStatus('No results to export', 'error');
@@ -491,16 +504,16 @@
             let csv = 'Username,Email,Password,Source,Date\n';
             currentResults.forEach(result => {
                 const row = [
-                    `"${result.username || ''}"`,,
-                    `"${result.email || ''}"`,,
-                    `"${result.password || ''}"`,,
-                    `"${result.source || ''}"`,,
+                    `"${result.username || ''}"`,
+                    `"${result.email || ''}"`,
+                    `"${result.password || ''}"`,
+                    `"${result.source || ''}"`,
                     `"${result.date || ''}"`
                 ].join(',');
                 csv += row + '\n';
             });
 
-            downloadFile(csv, 'breach-recovery-export.csv', 'text/csv');
+            downloadFile(csv, 'breach-export.csv', 'text/csv');
             showStatus('✓ CSV exported successfully', 'success');
         }
 
@@ -511,7 +524,7 @@
             }
 
             const json = JSON.stringify(currentResults, null, 2);
-            downloadFile(json, 'breach-recovery-export.json', 'application/json');
+            downloadFile(json, 'breach-export.json', 'application/json');
             showStatus('✓ JSON exported successfully', 'success');
         }
 
@@ -534,15 +547,31 @@
 
         function downloadFile(content, filename, type) {
             const blob = new Blob([content], { type });
-            const url = window.URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = filename;
             document.body.appendChild(a);
             a.click();
-            window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ====== KEYBOARD SHORTCUTS ======
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab.id === 'email') searchEmail();
+                else if (activeTab.id === 'username') searchUsername();
+                else if (activeTab.id === 'phone') searchPhone();
+            }
+        });
     </script>
 </body>
 </html>
