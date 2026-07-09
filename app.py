@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Breach Recovery Tool - Simplified Backend
-Real breach lookups + data export with Username, Password, Source
-Author: w3allhav3s3cr3ts
+Breach Recovery Tool - Backend
+Real breach data lookups via multiple API sources
+Models after BreachDirectory - returns Username, Email, Password, Source, Date
 """
 
 from flask import Flask, request, jsonify, send_file
@@ -12,97 +12,110 @@ from io import BytesIO
 import json
 import os
 from datetime import datetime
+import time
 
 app = Flask(__name__)
 CORS(app)
 
-# API Keys from environment
-HIBP_KEY = os.environ.get('HIBP_API_KEY', '')
-HUDSON_ROCK_KEY = os.environ.get('HUDSON_ROCK_API', '')
-DEHASHED_KEY = os.environ.get('DEHASHED_API', '')
+# API Configuration
+RAPIDAPI_KEY = os.environ.get('RAPIDAPI_KEY', '')
+RAPIDAPI_HOST = os.environ.get('RAPIDAPI_HOST', 'breachdirectory.p.rapidapi.com')
 
-# ====== BREACH SEARCH FUNCTIONS ======
+# ====== CORE BREACH SEARCH ======
 
-def search_hibp(email):
-    """Search Have I Been Pwned"""
-    results = []
-    if not HIBP_KEY:
+class BreachSearch:
+    """Query multiple breach data sources and aggregate results"""
+    
+    @staticmethod
+    def query_breachdirectory(query, query_type='email'):
+        """Query BreachDirectory API via RapidAPI"""
+        results = []
+        
+        if not RAPIDAPI_KEY:
+            return results
+        
+        try:
+            url = "https://breachdirectory.p.rapidapi.com/"
+            
+            headers = {
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "x-rapidapi-host": RAPIDAPI_HOST
+            }
+            
+            querystring = {query_type: query}
+            
+            response = requests.get(url, headers=headers, params=querystring, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get('success') and data.get('result'):
+                    for breach in data['result']:
+                        results.append({
+                            'username': breach.get('username', 'Unknown'),
+                            'email': breach.get('email', query),
+                            'password': breach.get('password', 'NOT_RECOVERED'),
+                            'source': breach.get('sources', ['BreachDirectory'])[0] if breach.get('sources') else 'BreachDirectory',
+                            'date': breach.get('date', 'Unknown')
+                        })
+        
+        except requests.exceptions.Timeout:
+            return results
+        except requests.exceptions.ConnectionError:
+            return results
+        except Exception as e:
+            print(f"BreachDirectory error: {str(e)}")
+        
         return results
     
-    try:
-        headers = {'User-Agent': 'BreachTool', 'hibp-api-key': HIBP_KEY}
-        r = requests.get(f'https://haveibeenpwned.com/api/v3/breachedaccount/{email}', 
-                        headers=headers, timeout=10)
+    @staticmethod
+    def query_hibp_email(email):
+        """Query Have I Been Pwned API"""
+        results = []
         
-        if r.status_code == 200:
-            for breach in r.json():
-                results.append({
-                    'username': email.split('@')[0],
-                    'email': email,
-                    'password': 'NOT_RECOVERED',
-                    'source': breach.get('Name', 'HIBP Breach'),
-                    'date': breach.get('BreachDate', 'Unknown')
-                })
-    except:
-        pass
-    
-    return results
-
-
-def search_hudson_rock(email):
-    """Search infostealer databases - returns actual passwords"""
-    results = []
-    if not HUDSON_ROCK_KEY:
-        return results
-    
-    try:
-        headers = {'Authorization': f'Bearer {HUDSON_ROCK_KEY}'}
-        r = requests.get(f'https://api.hudsonrock.com/v1/email/{email}', 
-                        headers=headers, timeout=10)
-        
-        if r.status_code == 200:
-            data = r.json()
-            if data.get('breaches'):
-                for breach in data['breaches']:
+        try:
+            headers = {
+                'User-Agent': 'BreachRecoveryTool/1.0'
+            }
+            
+            response = requests.get(
+                f'https://haveibeenpwned.com/api/v3/breachedaccount/{email}',
+                headers=headers,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                breaches = response.json()
+                for breach in breaches:
                     results.append({
-                        'username': breach.get('username', 'Unknown'),
+                        'username': email.split('@')[0] if '@' in email else email,
                         'email': email,
-                        'password': breach.get('password', 'NOT_RECOVERED'),
-                        'source': f"Infostealer - {breach.get('source', 'Unknown')}",
-                        'date': breach.get('date', 'Unknown')
+                        'password': 'NOT_RECOVERED_HIBP',
+                        'source': breach.get('Name', 'HIBP Breach'),
+                        'date': breach.get('BreachDate', 'Unknown')
                     })
-    except:
-        pass
-    
-    return results
-
-
-def search_dehashed(email):
-    """Search DeHashed breach database"""
-    results = []
-    if not DEHASHED_KEY:
+            elif response.status_code == 404:
+                pass
+        
+        except Exception as e:
+            print(f"HIBP error: {str(e)}")
+        
         return results
     
-    try:
-        headers = {'Authorization': f'Basic {DEHASHED_KEY}'}
-        r = requests.get(f'https://api.dehashed.com/search?email={email}', 
-                        headers=headers, timeout=10)
+    @staticmethod
+    def consolidate_results(all_results):
+        """Remove duplicates and consolidate breach data"""
+        seen = set()
+        unique = []
         
-        if r.status_code == 200:
-            data = r.json()
-            if data.get('entries'):
-                for entry in data['entries']:
-                    results.append({
-                        'username': entry.get('username', 'Unknown'),
-                        'email': email,
-                        'password': entry.get('password', 'NOT_RECOVERED'),
-                        'source': 'DeHashed',
-                        'date': entry.get('date', 'Unknown')
-                    })
-    except:
-        pass
-    
-    return results
+        for result in all_results:
+            key = f"{result.get('email', '')}_{result.get('password', '')}_{result.get('source', '')}"
+            
+            if key not in seen:
+                seen.add(key)
+                unique.append(result)
+        
+        return unique
 
 
 # ====== API ENDPOINTS ======
@@ -114,147 +127,209 @@ def index():
         with open('index.html', 'r') as f:
             return f.read()
     except:
-        return "Breach Recovery Tool - Backend Active", 200
+        return "Breach Recovery Tool - Backend Online", 200
 
 
 @app.route('/api/search/email', methods=['POST'])
 def search_email():
-    """Search email across all databases"""
+    """Search email across breach databases"""
     try:
-        email = request.json.get('email', '').strip().lower()
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
         
         if not email or '@' not in email:
-            return jsonify({'error': 'Invalid email', 'success': False}), 400
+            return jsonify({
+                'success': False,
+                'error': 'Invalid email address',
+                'results': []
+            }), 400
         
         all_results = []
-        all_results.extend(search_hibp(email))
-        all_results.extend(search_hudson_rock(email))
-        all_results.extend(search_dehashed(email))
         
-        # Remove duplicates
-        seen = set()
-        unique = []
-        for r in all_results:
-            key = f"{r['email']}_{r['source']}"
-            if key not in seen:
-                seen.add(key)
-                unique.append(r)
+        # Query BreachDirectory (primary source - has passwords)
+        bd_results = BreachSearch.query_breachdirectory(email, 'email')
+        if isinstance(bd_results, list):
+            all_results.extend(bd_results)
+        
+        # Query HIBP (secondary source - no passwords but comprehensive)
+        hibp_results = BreachSearch.query_hibp_email(email)
+        all_results.extend(hibp_results)
+        
+        # Consolidate duplicates
+        unique_results = BreachSearch.consolidate_results(all_results)
         
         return jsonify({
             'success': True,
             'query': email,
-            'results': unique,
-            'count': len(unique)
+            'results': unique_results,
+            'count': len(unique_results),
+            'timestamp': datetime.now().isoformat()
         })
     
     except Exception as e:
-        return jsonify({'error': str(e), 'success': False}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'results': []
+        }), 500
 
 
 @app.route('/api/search/username', methods=['POST'])
 def search_username():
-    """Search username"""
+    """Search username across breach databases"""
     try:
-        username = request.json.get('username', '').strip().lower()
+        data = request.get_json()
+        username = data.get('username', '').strip().lower()
         
         if not username or len(username) < 3:
-            return jsonify({'error': 'Username too short', 'success': False}), 400
+            return jsonify({
+                'success': False,
+                'error': 'Username must be at least 3 characters',
+                'results': []
+            }), 400
         
-        # Search as email variation
-        test_emails = [
-            f'{username}@gmail.com',
-            f'{username}@yahoo.com',
-            f'{username}@hotmail.com'
-        ]
+        # Query BreachDirectory by username
+        results = BreachSearch.query_breachdirectory(username, 'username')
         
-        all_results = []
-        for email in test_emails:
-            all_results.extend(search_hibp(email))
-            all_results.extend(search_hudson_rock(email))
+        if isinstance(results, list):
+            unique_results = BreachSearch.consolidate_results(results)
+        else:
+            unique_results = []
         
         return jsonify({
             'success': True,
             'query': username,
-            'results': all_results,
-            'count': len(all_results)
+            'results': unique_results,
+            'count': len(unique_results),
+            'timestamp': datetime.now().isoformat()
         })
     
     except Exception as e:
-        return jsonify({'error': str(e), 'success': False}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'results': []
+        }), 500
 
 
 @app.route('/api/search/phone', methods=['POST'])
 def search_phone():
-    """Search phone number"""
+    """Search phone number across breach databases"""
     try:
-        phone = request.json.get('phone', '').strip()
+        data = request.get_json()
+        phone = data.get('phone', '').strip()
         
         if not phone or len(phone) < 10:
-            return jsonify({'error': 'Invalid phone', 'success': False}), 400
+            return jsonify({
+                'success': False,
+                'error': 'Invalid phone number',
+                'results': []
+            }), 400
         
-        # Phone searches would go here
+        # Query BreachDirectory by phone
+        results = BreachSearch.query_breachdirectory(phone, 'phone')
+        
+        if isinstance(results, list):
+            unique_results = BreachSearch.consolidate_results(results)
+        else:
+            unique_results = []
+        
         return jsonify({
             'success': True,
             'query': phone,
-            'results': [],
-            'count': 0
+            'results': unique_results,
+            'count': len(unique_results),
+            'timestamp': datetime.now().isoformat()
         })
     
     except Exception as e:
-        return jsonify({'error': str(e), 'success': False}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'results': []
+        }), 500
 
 
 @app.route('/api/export/csv', methods=['POST'])
 def export_csv():
-    """Export as CSV"""
+    """Export results as CSV with Username, Email, Password, Source, Date"""
     try:
-        results = request.json.get('results', [])
+        data = request.get_json()
+        results = data.get('results', [])
         
         if not results:
-            return jsonify({'error': 'No data', 'success': False}), 400
+            return jsonify({
+                'success': False,
+                'error': 'No results to export'
+            }), 400
         
-        csv = 'Username,Email,Password,Source,Date\n'
-        for r in results:
-            csv += f"\"{r.get('username', '')}\",\"{r.get('email', '')}\",\"{r.get('password', '')}\",\"{r.get('source', '')}\",\"{r.get('date', '')}\"\n"
+        csv_content = 'Username,Email,Password,Source,Date\n'
+        
+        for result in results:
+            username = result.get('username', '').replace('"', '""')
+            email = result.get('email', '').replace('"', '""')
+            password = result.get('password', '').replace('"', '""')
+            source = result.get('source', '').replace('"', '""')
+            date = result.get('date', '').replace('"', '""')
+            
+            row = f'"{username}","{email}","{password}","{source}","{date}"\n'
+            csv_content += row
+        
+        filename = f"breach-export-{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         
         return send_file(
-            BytesIO(csv.encode()),
+            BytesIO(csv_content.encode()),
             mimetype='text/csv',
             as_attachment=True,
-            download_name=f"breach-{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            download_name=filename
         )
+    
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/export/json', methods=['POST'])
 def export_json():
-    """Export as JSON"""
+    """Export results as JSON"""
     try:
-        results = request.json.get('results', [])
+        data = request.get_json()
+        results = data.get('results', [])
         
         if not results:
-            return jsonify({'error': 'No data'}), 400
+            return jsonify({
+                'success': False,
+                'error': 'No results to export'
+            }), 400
+        
+        json_content = json.dumps(results, indent=2)
+        filename = f"breach-export-{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         
         return send_file(
-            BytesIO(json.dumps(results, indent=2).encode()),
+            BytesIO(json_content.encode()),
             mimetype='application/json',
             as_attachment=True,
-            download_name=f"breach-{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            download_name=filename
         )
+    
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    """Health check"""
+    """Health check - verify API keys are configured"""
     return jsonify({
         'status': 'online',
         'app': 'Breach Recovery Tool',
-        'has_hibp': bool(HIBP_KEY),
-        'has_hudson_rock': bool(HUDSON_ROCK_KEY),
-        'has_dehashed': bool(DEHASHED_KEY)
+        'version': '2.0',
+        'has_rapidapi': bool(RAPIDAPI_KEY),
+        'timestamp': datetime.now().isoformat()
     })
 
 
