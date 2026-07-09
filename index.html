@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breach Recovery Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            font-size: 12px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 10px;
+        }
+
+        button:active {
+            transform: scale(0.98);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .results {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .result-label {
+            color: #667eea;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .result-value {
+            color: #333;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 6px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 3px;
+        }
+
+        .breach-found {
+            border-left-color: #ff6b6b;
+            background: #fff5f5;
+        }
+
+        .breach-found .result-label {
+            color: #ff6b6b;
+        }
+
+        .export-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .export-button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            margin-bottom: 8px;
+        }
+
+        .export-button:active {
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        .info-box {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            color: #666;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Breach Recovery Tool</h1>
+        <div class="subtitle">Find your stolen or compromised data - Transparent & Tamper-Proof</div>
+
+        <div class="info-box">
+            ✓ All code is open-source and verifiable<br>
+            ✓ No hidden modifications or locks<br>
+            ✓ Full export with Username, Password & Source<br>
+            ✓ iPhone & Desktop Compatible
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="email">Email Search</button>
+            <button class="tab-btn" data-tab="username">Username Search</button>
+            <button class="tab-btn" data-tab="phone">Phone Search</button>
+        </div>
+
+        <!-- Email Tab -->
+        <div class="tab-content active" id="email">
+            <div class="section">
+                <div class="section-title">Email Breach Lookup</div>
+                <input type="email" id="emailInput" placeholder="Enter email address" />
+                <button onclick="searchEmail()">Search Email</button>
+            </div>
+        </div>
+
+        <!-- Username Tab -->
+        <div class="tab-content" id="username">
+            <div class="section">
+                <div class="section-title">Username Breach Lookup</div>
+                <input type="text" id="usernameInput" placeholder="Enter username" />
+                <button onclick="searchUsername()">Search Username</button>
+            </div>
+        </div>
+
+        <!-- Phone Tab -->
+        <div class="tab-content" id="phone">
+            <div class="section">
+                <div class="section-title">Phone Breach Lookup</div>
+                <input type="tel" id="phoneInput" placeholder="Enter phone number" />
+                <button onclick="searchPhone()">Search Phone</button>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="results" class="results"></div>
+
+        <div id="exportSection" class="export-section" style="display: none;">
+            <button class="export-button" onclick="exportCSV()">📥 Export as CSV</button>
+            <button class="export-button" onclick="exportJSON()">📥 Export as JSON</button>
+            <button class="export-button" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        let currentResults = [];
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        function showStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.textContent = type === 'loading' ? '⏳ ' : '';
+            status.textContent += message;
+            status.className = `status show ${type}`;
+        }
+
+        function hideStatus() {
+            document.getElementById('status').classList.remove('show');
+        }
+
+        function displayResults(results) {
+            currentResults = results;
+            const resultsDiv = document.getElementById('results');
+            const exportSection = document.getElementById('exportSection');
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div class="result-item">✓ No breaches found for this query</div>';
+            } else {
+                resultsDiv.innerHTML = results.map((result, idx) => `
+                    <div class="result-item breach-found">
+                        <span class="result-label">⚠️ BREACH #${idx + 1}</span>
+                        <div>
+                            <strong>Username:</strong><br>
+                            <span class="result-value">${escapeHtml(result.username || 'N/A')}</span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <strong>Email:</strong><br>
+                            <span class="result-value">${escapeHtml(result.email || 'N/A')}</span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <strong>Password:</strong><br>
+                            <span class="result-value">${escapeHtml(result.password || 'NOT_RECOVERED')}</span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <strong>Source:</strong><br>
+                            <span class="result-value">${escapeHtml(result.source || 'Unknown')}</span>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <strong>Date:</strong><br>
+                            <span class="result-value">${escapeHtml(result.date || 'N/A')}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            resultsDiv.classList.add('show');
+            exportSection.style.display = results.length > 0 ? 'block' : 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function searchEmail() {
+            const email = document.getElementById('emailInput').value.trim();
+            if (!email) {
+                showStatus('Please enter an email address', 'error');
+                return;
+            }
+
+            showStatus('Searching breach databases...', 'loading');
+            
+            try {
+                // Simulated breach data lookup - in production, connect to real APIs
+                const mockResults = await simulateBreachLookup('email', email);
+                displayResults(mockResults);
+                hideStatus();
+                
+                if (mockResults.length > 0) {
+                    showStatus(`Found ${mockResults.length} breach(es)`, 'error');
+                } else {
+                    showStatus('No breaches found', 'success');
+                }
+            } catch (error) {
+                showStatus('Error during search: ' + error.message, 'error');
+            }
+        }
+
+        async function searchUsername() {
+            const username = document.getElementById('usernameInput').value.trim();
+            if (!username) {
+                showStatus('Please enter a username', 'error');
+                return;
+            }
+
+            showStatus('Searching breach databases...', 'loading');
+            
+            try {
+                const mockResults = await simulateBreachLookup('username', username);
+                displayResults(mockResults);
+                hideStatus();
+                
+                if (mockResults.length > 0) {
+                    showStatus(`Found ${mockResults.length} breach(es)`, 'error');
+                } else {
+                    showStatus('No breaches found', 'success');
+                }
+            } catch (error) {
+                showStatus('Error during search: ' + error.message, 'error');
+            }
+        }
+
+        async function searchPhone() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            if (!phone) {
+                showStatus('Please enter a phone number', 'error');
+                return;
+            }
+
+            showStatus('Searching breach databases...', 'loading');
+            
+            try {
+                const mockResults = await simulateBreachLookup('phone', phone);
+                displayResults(mockResults);
+                hideStatus();
+                
+                if (mockResults.length > 0) {
+                    showStatus(`Found ${mockResults.length} breach(es)`, 'error');
+                } else {
+                    showStatus('No breaches found', 'success');
+                }
+            } catch (error) {
+                showStatus('Error during search: ' + error.message, 'error');
+            }
+        }
+
+        async function simulateBreachLookup(type, query) {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Mock breach data - replace with real API calls
+            const mockBreaches = [
+                {
+                    username: 'user_' + query.split('@')[0],
+                    email: query.includes('@') ? query : query + '@example.com',
+                    password: 'P@ssw0rd123!',
+                    source: 'LinkedIn Breach 2021',
+                    date: '2021-06-15'
+                },
+                {
+                    username: query,
+                    email: query.includes('@') ? query : 'user+' + query + '@gmail.com',
+                    password: 'MySecurePass#789',
+                    source: 'Facebook Data Leak',
+                    date: '2022-03-22'
+                }
+            ];
+
+            // 60% chance of finding a breach for demo
+            return Math.random() > 0.4 ? mockBreaches : [];
+        }
+
+        function exportCSV() {
+            if (currentResults.length === 0) {
+                showStatus('No results to export', 'error');
+                return;
+            }
+
+            let csv = 'Username,Email,Password,Source,Date\n';
+            currentResults.forEach(result => {
+                const row = [
+                    `"${result.username || ''}"`,,
+                    `"${result.email || ''}"`,,
+                    `"${result.password || ''}"`,,
+                    `"${result.source || ''}"`,,
+                    `"${result.date || ''}"`
+                ].join(',');
+                csv += row + '\n';
+            });
+
+            downloadFile(csv, 'breach-recovery-export.csv', 'text/csv');
+            showStatus('✓ CSV exported successfully', 'success');
+        }
+
+        function exportJSON() {
+            if (currentResults.length === 0) {
+                showStatus('No results to export', 'error');
+                return;
+            }
+
+            const json = JSON.stringify(currentResults, null, 2);
+            downloadFile(json, 'breach-recovery-export.json', 'application/json');
+            showStatus('✓ JSON exported successfully', 'success');
+        }
+
+        function copyToClipboard() {
+            if (currentResults.length === 0) {
+                showStatus('No results to copy', 'error');
+                return;
+            }
+
+            const text = currentResults.map(r => 
+                `Username: ${r.username}\nEmail: ${r.email}\nPassword: ${r.password}\nSource: ${r.source}\nDate: ${r.date}`
+            ).join('\n---\n');
+
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('✓ Copied to clipboard', 'success');
+            }).catch(() => {
+                showStatus('Error copying to clipboard', 'error');
+            });
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
