@@ -149,6 +149,11 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .status {
             padding: 12px;
             border-radius: 6px;
@@ -293,12 +298,12 @@
 <body>
     <div class="container">
         <h1>🔍 Breach Recovery Tool</h1>
-        <div class="subtitle">Find your stolen or compromised data - 100% Web Browser</div>
+        <div class="subtitle">Query real breach databases - Get Username, Password & Source</div>
 
         <div class="info-box">
-            ✓ Runs completely in your browser (no server needed)<br>
-            ✓ All code transparent & tamper-proof<br>
-            ✓ Export: Username, Password & Source<br>
+            ✓ Real breach data from BreachDirectory + HIBP<br>
+            ✓ Returns actual compromised passwords<br>
+            ✓ Export: Username, Email, Password, Source, Date<br>
             ✓ Works on iPhone, iPad, Desktop
         </div>
 
@@ -313,7 +318,7 @@
             <div class="section">
                 <div class="section-title">Email Breach Lookup</div>
                 <input type="email" id="emailInput" placeholder="Enter email address" />
-                <button onclick="searchEmail()">🔎 Search Email</button>
+                <button id="emailBtn" onclick="searchEmail()">🔎 Search Email</button>
             </div>
         </div>
 
@@ -322,7 +327,7 @@
             <div class="section">
                 <div class="section-title">Username Breach Lookup</div>
                 <input type="text" id="usernameInput" placeholder="Enter username" />
-                <button onclick="searchUsername()">🔎 Search Username</button>
+                <button id="usernameBtn" onclick="searchUsername()">🔎 Search Username</button>
             </div>
         </div>
 
@@ -331,7 +336,7 @@
             <div class="section">
                 <div class="section-title">Phone Breach Lookup</div>
                 <input type="tel" id="phoneInput" placeholder="Enter phone number" />
-                <button onclick="searchPhone()">🔎 Search Phone</button>
+                <button id="phoneBtn" onclick="searchPhone()">🔎 Search Phone</button>
             </div>
         </div>
 
@@ -347,18 +352,7 @@
     </div>
 
     <script>
-        // ====== BREACH DATABASE (Add real breaches here) ======
-        // Format: { username, email, password, source, date }
-        const BREACH_DATABASE = {
-            'test@example.com': [
-                { username: 'testuser', email: 'test@example.com', password: 'Password123!', source: 'LinkedIn Breach 2021', date: '2021-06-15' },
-                { username: 'testuser', email: 'test@example.com', password: 'MyPass456#', source: 'Facebook Data Leak', date: '2022-03-22' }
-            ],
-            'john@gmail.com': [
-                { username: 'johnsmith', email: 'john@gmail.com', password: 'SecurePass789!', source: 'Twitter Breach 2020', date: '2020-11-01' }
-            ]
-        };
-
+        const API_BASE = window.location.origin;
         let currentResults = [];
 
         // ====== TAB SWITCHING ======
@@ -384,8 +378,13 @@
             document.getElementById('status').classList.remove('show');
         }
 
+        function setButtonDisabled(btnId, disabled) {
+            const btn = document.getElementById(btnId);
+            if (btn) btn.disabled = disabled;
+        }
+
         // ====== SEARCH FUNCTIONS ======
-        function searchEmail() {
+        async function searchEmail() {
             const email = document.getElementById('emailInput').value.trim().toLowerCase();
             if (!email) {
                 showStatus('Please enter an email address', 'error');
@@ -396,14 +395,33 @@
                 return;
             }
 
-            showStatus('Searching breach database...', 'loading');
-            setTimeout(() => {
-                const results = BREACH_DATABASE[email] || [];
-                displayResults(results, email);
-            }, 800);
+            showStatus('Searching breach databases...', 'loading');
+            setButtonDisabled('emailBtn', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search/email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.results, email);
+                } else {
+                    showStatus(data.error || 'Search failed', 'error');
+                    document.getElementById('results').classList.remove('show');
+                }
+            } catch (error) {
+                showStatus('Connection error: ' + error.message, 'error');
+                document.getElementById('results').classList.remove('show');
+            } finally {
+                setButtonDisabled('emailBtn', false);
+            }
         }
 
-        function searchUsername() {
+        async function searchUsername() {
             const username = document.getElementById('usernameInput').value.trim().toLowerCase();
             if (!username) {
                 showStatus('Please enter a username', 'error');
@@ -414,21 +432,33 @@
                 return;
             }
 
-            showStatus('Searching breach database...', 'loading');
-            setTimeout(() => {
-                const results = [];
-                for (const email in BREACH_DATABASE) {
-                    BREACH_DATABASE[email].forEach(breach => {
-                        if (breach.username.toLowerCase() === username) {
-                            results.push(breach);
-                        }
-                    });
+            showStatus('Searching breach databases...', 'loading');
+            setButtonDisabled('usernameBtn', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search/username`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.results, username);
+                } else {
+                    showStatus(data.error || 'Search failed', 'error');
+                    document.getElementById('results').classList.remove('show');
                 }
-                displayResults(results, username);
-            }, 800);
+            } catch (error) {
+                showStatus('Connection error: ' + error.message, 'error');
+                document.getElementById('results').classList.remove('show');
+            } finally {
+                setButtonDisabled('usernameBtn', false);
+            }
         }
 
-        function searchPhone() {
+        async function searchPhone() {
             const phone = document.getElementById('phoneInput').value.trim();
             if (!phone) {
                 showStatus('Please enter a phone number', 'error');
@@ -439,12 +469,30 @@
                 return;
             }
 
-            showStatus('Searching breach database...', 'loading');
-            setTimeout(() => {
-                // Phone search simulation - expand with real data
-                const results = [];
-                displayResults(results, phone);
-            }, 800);
+            showStatus('Searching breach databases...', 'loading');
+            setButtonDisabled('phoneBtn', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search/phone`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.results, phone);
+                } else {
+                    showStatus(data.error || 'Search failed', 'error');
+                    document.getElementById('results').classList.remove('show');
+                }
+            } catch (error) {
+                showStatus('Connection error: ' + error.message, 'error');
+                document.getElementById('results').classList.remove('show');
+            } finally {
+                setButtonDisabled('phoneBtn', false);
+            }
         }
 
         // ====== DISPLAY RESULTS ======
@@ -495,37 +543,68 @@
         }
 
         // ====== EXPORT FUNCTIONS ======
-        function exportCSV() {
+        async function exportCSV() {
             if (currentResults.length === 0) {
                 showStatus('No results to export', 'error');
                 return;
             }
 
-            let csv = 'Username,Email,Password,Source,Date\n';
-            currentResults.forEach(result => {
-                const row = [
-                    `"${result.username || ''}"`,
-                    `"${result.email || ''}"`,
-                    `"${result.password || ''}"`,
-                    `"${result.source || ''}"`,
-                    `"${result.date || ''}"`
-                ].join(',');
-                csv += row + '\n';
-            });
+            try {
+                const response = await fetch(`${API_BASE}/api/export/csv`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ results: currentResults })
+                });
 
-            downloadFile(csv, 'breach-export.csv', 'text/csv');
-            showStatus('✓ CSV exported successfully', 'success');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `breach-export-${new Date().getTime()}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showStatus('✓ CSV exported successfully', 'success');
+                } else {
+                    showStatus('Export failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Export error: ' + error.message, 'error');
+            }
         }
 
-        function exportJSON() {
+        async function exportJSON() {
             if (currentResults.length === 0) {
                 showStatus('No results to export', 'error');
                 return;
             }
 
-            const json = JSON.stringify(currentResults, null, 2);
-            downloadFile(json, 'breach-export.json', 'application/json');
-            showStatus('✓ JSON exported successfully', 'success');
+            try {
+                const response = await fetch(`${API_BASE}/api/export/json`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ results: currentResults })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `breach-export-${new Date().getTime()}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showStatus('✓ JSON exported successfully', 'success');
+                } else {
+                    showStatus('Export failed', 'error');
+                }
+            } catch (error) {
+                showStatus('Export error: ' + error.message, 'error');
+            }
         }
 
         function copyToClipboard() {
@@ -543,18 +622,6 @@
             }).catch(() => {
                 showStatus('Error copying to clipboard', 'error');
             });
-        }
-
-        function downloadFile(content, filename, type) {
-            const blob = new Blob([content], { type });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         }
 
         function escapeHtml(text) {
